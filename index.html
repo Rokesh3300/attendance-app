@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QR Attendance Management System</title>
+  
+  <script src="https://cdn.tailwindcss.com"></script>
+  
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body class="bg-slate-50">
+  
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect } = React;
+
+    // --- Mock Database & Constants ---
+    const USERS = [
+      { id: 'u1', name: 'System Admin', role: 'ADMIN', email: 'admin@ams.edu' },
+      { id: 'u2', name: 'Dr. Alan Smith', role: 'FACULTY', email: 'alan.s@ams.edu' },
+      { id: 'u3', name: 'Prof. Sarah Jane', role: 'FACULTY', email: 'sarah.j@ams.edu' },
+      { id: 'u4', name: 'Alice Johnson', role: 'STUDENT', email: 'alice.j@student.ams.edu' },
+      { id: 'u5', name: 'Bob Williams', role: 'STUDENT', email: 'bob.w@student.ams.edu' },
+    ];
+
+    const SUBJECTS = [
+      { id: 'sub1', code: 'CS101', name: 'Intro to Computer Science' },
+      { id: 'sub2', code: 'MATH201', name: 'Advanced Calculus' },
+    ];
+
+    // --- Main App Component ---
+    function App() {
+      const [currentUser, setCurrentUser] = useState(null);
+      const [sessions, setSessions] = useState([]);
+      const [attendanceRecords, setAttendanceRecords] = useState([]);
+      const [toast, setToast] = useState(null);
+
+      const showToast = (message, type = 'info') => {
+        setToast({ message, type });
+        setTimeout(() => setToast(null), 3000);
+      };
+
+      const handleLogin = (userId) => {
+        const user = USERS.find(u => u.id === userId);
+        setCurrentUser(user);
+        showToast(`Welcome back, ${user.name}`, 'success');
+      };
+
+      const handleLogout = () => {
+        setCurrentUser(null);
+      };
+
+      // State Management Actions
+      const createSession = (facultyId, subjectId, room) => {
+        const newSession = {
+          id: `sess_${Date.now()}`,
+          facultyId,
+          subjectId,
+          room,
+          createdAt: Date.now(),
+          expiresAt: Date.now() + 5 * 60 * 1000, // 5 minute TTL
+          status: 'ACTIVE',
+          qrToken: `QR_HMAC_${Math.random().toString(36).substring(2, 15)}`
+        };
+        setSessions(prev => [newSession, ...prev]);
+        showToast('Attendance session started. QR code generated.', 'success');
+        return newSession;
+      };
+
+      const closeSession = (sessionId) => {
+        setSessions(prev => prev.map(s => 
+          s.id === sessionId ? { ...s, status: 'CLOSED', expiresAt: Date.now() } : s
+        ));
+        showToast('Session closed manually.', 'info');
+      };
+
+      const markAttendance = (student, qrTokenScanned) => {
+        // Validate session
+        const activeSession = sessions.find(s => s.qrToken === qrTokenScanned);
+        
+        if (!activeSession) {
+          showToast('Invalid QR Code or Session Not Found.', 'error');
+          return;
+        }
+        
+        if (Date.now() > activeSession.expiresAt || activeSession.status !== 'ACTIVE') {
+          showToast('QR Code has expired. Session closed.', 'error');
+          return;
+        }
+
+        // Check if already marked
+        const alreadyMarked = attendanceRecords.find(
+          a => a.sessionId === activeSession.id && a.studentId === student.id
+        );
+
+        if (alreadyMarked) {
+          showToast('Attendance already marked for this session.', 'error');
+          return;
+        }
+
+        const newRecord = {
+          id: `att_${Date.now()}`,
+          sessionId: activeSession.id,
+          studentId: student.id,
+          studentName: student.name,
+          timestamp: Date.now(),
+          status: 'PRESENT',
+          deviceFingerprint: navigator.userAgent.substring(0, 50)
+        };
+
+        setAttendanceRecords(prev => 
