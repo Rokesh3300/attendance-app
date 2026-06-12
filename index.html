@@ -5,29 +5,19 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Attendance App</title>
   
+  <!-- CDNs -->
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <!-- Error Catcher: Error iruntha red color-la screen-la kaattum -->
-  <script>
-    window.onerror = function(message) {
-      document.getElementById('root').innerHTML = 
-        '<div style="color:red; padding:40px; text-align:center; font-family:sans-serif;">' +
-        '<h3>Oops! Oru Error Irukku:</h3><p>' + message + '</p>' +
-        '<p style="color:gray; font-size:12px; mt-4">Screenshot eduthu anuppunga</p></div>';
-    };
-  </script>
 </head>
 <body class="bg-slate-50">
   
-  <!-- App Load aagura varai intha text theriyum -->
   <div id="root">
     <div style="text-align:center; padding:100px; font-family:sans-serif; color:#4f46e5;">
       <i class="fas fa-spinner fa-spin" style="font-size:30px; margin-bottom:15px;"></i>
-      <h2>Loading App... Please wait...</h2>
+      <h2>Loading Attendance System...</h2>
     </div>
   </div>
 
@@ -122,12 +112,13 @@
       };
 
       if (!currentUser) {
-        return <LoginScreen onLogin="{handleLogin}"/>;
+        return <LoginScreen onLogin={handleLogin} />;
       }
 
       return (
         <div className="min-h-screen bg-slate-50 flex flex-col md:flex-row text-slate-800">
-          <Sidebar onLogout="{handleLogout}" user="{currentUser}"/>
+          <Sidebar onLogout={handleLogout} user={currentUser} />
+          
           <main className="flex-1 p-4 md:p-8 overflow-y-auto h-screen relative">
             <header className="mb-8 flex justify-between items-center">
               <div>
@@ -143,12 +134,27 @@
               </div>
             </header>
 
-            {currentUser.role === 'ADMIN' && <AdminDashboard attendance="{attendanceRecords}" sessions="{sessions}"/>}
-            {currentUser.role === 'FACULTY' && (
-              <FacultyDashboard attendance="{attendanceRecords}" onCloseSession="{closeSession}" onCreateSession="{createSession}" sessions="{sessions}" user="{currentUser}"/>
+            {currentUser.role === 'ADMIN' && (
+              <AdminDashboard attendance={attendanceRecords} sessions={sessions} />
             )}
+            
+            {currentUser.role === 'FACULTY' && (
+              <FacultyDashboard 
+                attendance={attendanceRecords} 
+                onCloseSession={closeSession} 
+                onCreateSession={createSession} 
+                sessions={sessions} 
+                user={currentUser} 
+              />
+            )}
+            
             {currentUser.role === 'STUDENT' && (
-              <StudentDashboard attendance="{attendanceRecords}" onScan="{markAttendance}" sessions="{sessions}" user="{currentUser}"/>
+              <StudentDashboard 
+                attendance={attendanceRecords} 
+                onScan={markAttendance} 
+                sessions={sessions} 
+                user={currentUser} 
+              />
             )}
 
             {toast && (
@@ -271,7 +277,6 @@
               </div>
             )}
             
-            
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-slate-200 overflow-x-auto">
               <h3 className="font-bold mb-4">Past Sessions</h3>
               <table className="w-full text-left text-sm">
@@ -320,7 +325,7 @@
       return (
         <div className="max-w-md mx-auto space-y-6">
           <div className="bg-white rounded-3xl p-6 shadow-xl border text-center">
-            <i className="fas fa-mobile-alt text-4xl text-indigo-600 mb-4 bg-indigo-100 p-6 rounded-full"></i>
+            <i className="fas fa-mobile-alt text-4xl text-indigo-600 mb-4 bg-indigo-100 p-6 rounded-full w-20 h-20 inline-flex items-center justify-center"></i>
             <h2 className="text-xl font-bold mb-2">Scan Attendance</h2>
             <button onClick={handleSimulateScan} disabled={isScanning} className={`w-full py-4 mt-4 rounded-xl font-bold text-white shadow-lg ${isScanning ? 'bg-slate-400' : 'bg-indigo-600'}`}>
               {isScanning ? 'Scanning...' : 'Tap to Scan QR Code'}
@@ -354,7 +359,7 @@
                 {[...sessions, ...attendance].sort((a, b) => (b.createdAt || b.timestamp) - (a.createdAt || a.timestamp)).map(event => (
                   <tr key={event.id} className="border-b">
                     <td className="p-4 text-slate-500">{new Date(event.createdAt || event.timestamp).toLocaleString()}</td>
-                    <td className="p-4">{event.facultyId ? <span className="text-indigo-600">SESSION_CREATED</span> : <span className="text-emerald-600">ATTENDANCE</span>}</td>
+                    <td className="p-4">{event.facultyId ? <span className="text-indigo-600 font-bold">SESSION_CREATED</span> : <span className="text-emerald-600 font-bold">ATTENDANCE</span>}</td>
                     <td className="p-4">{event.facultyId ? `Faculty: ${event.facultyId}` : `Student: ${event.studentId}`}</td>
                   </tr>
                 ))}
